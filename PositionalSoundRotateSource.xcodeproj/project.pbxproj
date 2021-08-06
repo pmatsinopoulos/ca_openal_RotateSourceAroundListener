@@ -32,6 +32,7 @@
 		E52D75E726BD4FD000E10EE4 /* CheckALError.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CheckALError.m; sourceTree = "<group>"; };
 		E52D75E926BD500300E10EE4 /* CheckALError.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CheckALError.h; sourceTree = "<group>"; };
 		E52D75EA26BD591800E10EE4 /* MyLoopPlayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MyLoopPlayer.h; sourceTree = "<group>"; };
+		E52D75EC26BDAF6900E10EE4 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,6 +49,7 @@
 		E52D75CC26BD4A5800E10EE4 = {
 			isa = PBXGroup;
 			children = (
+				E52D75EC26BDAF6900E10EE4 /* README.md */,
 				E52D75D726BD4A5800E10EE4 /* PositionalSoundRotateSource */,
 				E52D75D626BD4A5800E10EE4 /* Products */,
 				E52D75DF26BD4A6600E10EE4 /* Frameworks */,
