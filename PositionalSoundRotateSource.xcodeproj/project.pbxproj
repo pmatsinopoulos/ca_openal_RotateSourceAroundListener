@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		E52D75D926BD4A5800E10EE4 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = E52D75D826BD4A5800E10EE4 /* main.m */; };
+		E52D75E426BD4B9000E10EE4 /* CheckError.m in Sources */ = {isa = PBXBuildFile; fileRef = E52D75E326BD4B9000E10EE4 /* CheckError.m */; };
+		E52D75E826BD4FD000E10EE4 /* CheckALError.m in Sources */ = {isa = PBXBuildFile; fileRef = E52D75E726BD4FD000E10EE4 /* CheckALError.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +27,11 @@
 /* Begin PBXFileReference section */
 		E52D75D526BD4A5800E10EE4 /* PositionalSoundRotateSource */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = PositionalSoundRotateSource; sourceTree = BUILT_PRODUCTS_DIR; };
 		E52D75D826BD4A5800E10EE4 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		E52D75E326BD4B9000E10EE4 /* CheckError.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CheckError.m; sourceTree = "<group>"; };
+		E52D75E526BD4BD300E10EE4 /* CheckError.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CheckError.h; sourceTree = "<group>"; };
+		E52D75E726BD4FD000E10EE4 /* CheckALError.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CheckALError.m; sourceTree = "<group>"; };
+		E52D75E926BD500300E10EE4 /* CheckALError.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CheckALError.h; sourceTree = "<group>"; };
+		E52D75EA26BD591800E10EE4 /* MyLoopPlayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MyLoopPlayer.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -43,6 +50,7 @@
 			children = (
 				E52D75D726BD4A5800E10EE4 /* PositionalSoundRotateSource */,
 				E52D75D626BD4A5800E10EE4 /* Products */,
+				E52D75DF26BD4A6600E10EE4 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -57,9 +65,37 @@
 		E52D75D726BD4A5800E10EE4 /* PositionalSoundRotateSource */ = {
 			isa = PBXGroup;
 			children = (
+				E52D75E626BD4F8C00E10EE4 /* AudioUtils */,
+				E52D75E226BD4B7700E10EE4 /* Utils */,
 				E52D75D826BD4A5800E10EE4 /* main.m */,
+				E52D75EA26BD591800E10EE4 /* MyLoopPlayer.h */,
 			);
 			path = PositionalSoundRotateSource;
+			sourceTree = "<group>";
+		};
+		E52D75DF26BD4A6600E10EE4 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		E52D75E226BD4B7700E10EE4 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				E52D75E326BD4B9000E10EE4 /* CheckError.m */,
+				E52D75E526BD4BD300E10EE4 /* CheckError.h */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		E52D75E626BD4F8C00E10EE4 /* AudioUtils */ = {
+			isa = PBXGroup;
+			children = (
+				E52D75E726BD4FD000E10EE4 /* CheckALError.m */,
+				E52D75E926BD500300E10EE4 /* CheckALError.h */,
+			);
+			path = AudioUtils;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -119,6 +155,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				E52D75D926BD4A5800E10EE4 /* main.m in Sources */,
+				E52D75E426BD4B9000E10EE4 /* CheckError.m in Sources */,
+				E52D75E826BD4FD000E10EE4 /* CheckALError.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
