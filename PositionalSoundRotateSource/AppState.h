@@ -10,15 +10,7 @@
 
 #include <AudioToolbox/AudioToolbox.h>
 
-typedef struct _AppState {
-  AudioStreamBasicDescription dataFormat;
-  
-  // this is the buffer that we will fill in from the
-  // the audio file and we will finally give to the OpenAL Source
-  UInt16 *sampleBuffer;
-  
-  UInt32 bufferSizeBytes;
-  
+typedef struct _AppState {  
   ALuint buffers[1];
   ALuint sources[1];
   

@@ -27,20 +27,22 @@ OSStatus LoadAudioDataIntoBuffer(AppState *appState, const char *fileName) {
                                  &extAudioFile),
              "opening the ext audio file");
   
-  memset((void *)&(appState->dataFormat), 0, sizeof(appState->dataFormat));
-  appState->dataFormat.mFormatID = kAudioFormatLinearPCM;
-  appState->dataFormat.mFramesPerPacket = 1;
-  appState->dataFormat.mFormatFlags = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
-  appState->dataFormat.mBitsPerChannel = 16;
-  appState->dataFormat.mChannelsPerFrame = 1; // mono
-  appState->dataFormat.mBytesPerFrame = appState->dataFormat.mBitsPerChannel * appState->dataFormat.mChannelsPerFrame / 8;
-  appState->dataFormat.mBytesPerPacket = appState->dataFormat.mBytesPerFrame * appState->dataFormat.mFramesPerPacket;
-  appState->dataFormat.mSampleRate = 44100.0;
+  AudioStreamBasicDescription dataFormat;
+  
+  memset((void *)&(dataFormat), 0, sizeof(dataFormat));
+  dataFormat.mFormatID = kAudioFormatLinearPCM;
+  dataFormat.mFramesPerPacket = 1;
+  dataFormat.mFormatFlags = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
+  dataFormat.mBitsPerChannel = 16;
+  dataFormat.mChannelsPerFrame = 1; // mono
+  dataFormat.mBytesPerFrame = dataFormat.mBitsPerChannel * dataFormat.mChannelsPerFrame / 8;
+  dataFormat.mBytesPerPacket = dataFormat.mBytesPerFrame * dataFormat.mFramesPerPacket;
+  dataFormat.mSampleRate = 44100.0;
 
   CheckError(ExtAudioFileSetProperty(extAudioFile,
                                      kExtAudioFileProperty_ClientDataFormat,
-                                     sizeof(appState->dataFormat),
-                                     &(appState->dataFormat)),
+                                     sizeof(dataFormat),
+                                     &(dataFormat)),
              "Setting the client data format on the ext audio file");
   
   SInt64 fileLengthFrames;
@@ -59,12 +61,17 @@ OSStatus LoadAudioDataIntoBuffer(AppState *appState, const char *fileName) {
                                      &inputDataFormat),
              "Getting the input data format from audio file");
   
-  SInt64 framesToPutInBuffer = fileLengthFrames * appState->dataFormat.mSampleRate / inputDataFormat.mSampleRate;
+  SInt64 framesToPutInBuffer = fileLengthFrames * dataFormat.mSampleRate / inputDataFormat.mSampleRate;
   
-  appState->bufferSizeBytes = framesToPutInBuffer * appState->dataFormat.mBytesPerFrame;
-  appState->duration = framesToPutInBuffer / appState->dataFormat.mSampleRate;
+  UInt32 bufferSizeBytes;
+  bufferSizeBytes = framesToPutInBuffer * dataFormat.mBytesPerFrame;
+  appState->duration = framesToPutInBuffer / dataFormat.mSampleRate;
 
-  appState->sampleBuffer = malloc(appState->bufferSizeBytes);
+  // this is the buffer that we will fill in from the
+  // the audio file and we will finally give to the OpenAL Source.
+  // OpenAL Source will copy data from this buffer.
+  UInt16 *sampleBuffer;
+  sampleBuffer = malloc(bufferSizeBytes);
 
   // This is a temporary structure that will basically be used as an interface
   // to the ExtAudioFileRead(). Its mBuffers[0].mData pointer will point to the
@@ -72,14 +79,14 @@ OSStatus LoadAudioDataIntoBuffer(AppState *appState, const char *fileName) {
   // ExtAudioFileRead().
   AudioBufferList abl;
   abl.mNumberBuffers = 1;
-  abl.mBuffers[0].mNumberChannels = appState->dataFormat.mChannelsPerFrame;
+  abl.mBuffers[0].mNumberChannels = dataFormat.mChannelsPerFrame;
     
   UInt32 totalFramesRead = 0;
   UInt32 framesToRead = 0;
   do {
     framesToRead = framesToPutInBuffer - totalFramesRead;
-    abl.mBuffers[0].mData = appState->sampleBuffer + totalFramesRead * appState->dataFormat.mBytesPerFrame;
-    abl.mBuffers[0].mDataByteSize = framesToRead * appState->dataFormat.mBytesPerFrame;
+    abl.mBuffers[0].mData = sampleBuffer + totalFramesRead * dataFormat.mBytesPerFrame;
+    abl.mBuffers[0].mDataByteSize = framesToRead * dataFormat.mBytesPerFrame;
     
     CheckError(ExtAudioFileRead(extAudioFile,
                                 &framesToRead,
@@ -90,6 +97,17 @@ OSStatus LoadAudioDataIntoBuffer(AppState *appState, const char *fileName) {
   
   CheckError(ExtAudioFileDispose(extAudioFile), "Disposing the ext audio file");
   CFRelease(cfFileName);
+    
+  alBufferData(appState->buffers[0],
+               AL_FORMAT_MONO16,
+               sampleBuffer,
+               bufferSizeBytes,
+               dataFormat.mSampleRate);
+  CheckALError("giving data to the AL buffer");
+  
+  free(sampleBuffer);
+  sampleBuffer = NULL;
+  
   return noErr;
 }
 
@@ -133,41 +151,59 @@ void CreateSource(AppState *appState) {
   UpdateSourceLocation(appState);
 }
 
+void CreateAndFillBuffer(AppState *appState, const char *fileName) {
+  alGenBuffers(1, appState->buffers);
+  CheckALError("generating AL buffers");
+
+  CheckError(LoadAudioDataIntoBuffer(appState, fileName), "Loading Audio Data Into Buffer");
+}
+
+void LinkBufferToSource(AppState *appState) {
+  alSourcei(appState->sources[0], AL_BUFFER, appState->buffers[0]);
+  CheckALError("setting the buffer to the source");
+}
+
+void PositionListenerInScene() {
+  alListener3f(AL_POSITION, 0.0, 0.0, 0.0);
+  CheckALError("setting the listener position");
+}
+
+void StartSource(AppState *appState) {
+  alSourcePlay(appState->sources[0]);
+  CheckALError("starting the source");
+}
+
+void StopSource(AppState *appState) {
+  alSourceStop(appState->sources[0]);
+  CheckALError("stopping the source");
+}
+
+void ReleaseResources(AppState *appState, ALCdevice *alDevice, ALCcontext *alContext) {
+  alDeleteSources(1, appState->sources);
+  alDeleteBuffers(1, appState->buffers);
+  alcDestroyContext(alContext);
+  alcCloseDevice(alDevice);
+}
+
 int main(int argc, const char * argv[]) {
   @autoreleasepool {
     NSLog(@"Starting...");
     
     AppState appState;
     
-    CheckError(LoadAudioDataIntoBuffer(&appState, argv[1]), "Loading Audio Data Into Buffer");
-    
     ALCdevice *alDevice = OpenDevice();
     
     ALCcontext *alContext = CreateContext(alDevice);
     
     CreateSource(&appState);
+            
+    CreateAndFillBuffer(&appState, argv[1]);
     
-    alGenBuffers(1, appState.buffers);
-    CheckALError("generating AL buffers");
+    LinkBufferToSource(&appState);
     
-    alBufferData(appState.buffers[0],
-                 AL_FORMAT_MONO16,
-                 appState.sampleBuffer,
-                 appState.bufferSizeBytes,
-                 appState.dataFormat.mSampleRate);
-    CheckALError("giving data to the AL buffer");
-    free(appState.sampleBuffer);
-    appState.sampleBuffer = NULL;
+    PositionListenerInScene();
     
-    
-    alSourcei(appState.sources[0], AL_BUFFER, appState.buffers[0]);
-    CheckALError("setting the buffer to the source");
-    
-    alListener3f(AL_POSITION, 0.0, 0.0, 0.0);
-    CheckALError("setting the listener position");
-    
-    alSourcePlay(appState.sources[0]);
-    CheckALError("starting the source");
+    StartSource(&appState);
     
     printf("Playing ... \n");
     time_t startTime = time(NULL);
@@ -177,13 +213,9 @@ int main(int argc, const char * argv[]) {
       CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.1, false);
     } while(difftime(time(NULL), startTime) < (appState.duration + 0.5));
     
-    alSourceStop(appState.sources[0]);
-    CheckALError("stopping the source");
+    StopSource(&appState);
     
-    alDeleteSources(1, appState.sources);
-    alDeleteBuffers(1, appState.buffers);
-    alcDestroyContext(alContext);
-    alcCloseDevice(alDevice);
+    ReleaseResources(&appState, alDevice, alContext);
     
     NSLog(@"Bye");
   }
