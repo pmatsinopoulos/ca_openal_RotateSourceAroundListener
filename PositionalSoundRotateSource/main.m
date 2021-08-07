@@ -8,25 +8,16 @@
 #import <Foundation/Foundation.h>
 #import <AudioToolbox/AudioToolbox.h>
 #import <OpenAL/OpenAL.h>
-#include "CheckError.h"
-#include "CheckALError.h"
-#include "AppState.h"
+#import "CheckError.h"
+#import "CheckALError.h"
+#import "AppState.h"
+#import "OpenAudioFile.h"
+#import "GetNumberOfFramesInFile.h"
+#import "GetExtAudioFileAudioDataFormat.h"
 
 #define ORBIT_SPEED 1
 
-OSStatus LoadAudioDataIntoBuffer(AppState *appState, const char *fileName) {
-  CFStringRef cfFileName = CFStringCreateWithCString(kCFAllocatorDefault,
-                                                  fileName,
-                                                  CFStringGetSystemEncoding());
-  CFURLRef fileURL = CFURLCreateWithFileSystemPath(kCFAllocatorDefault,
-                                                       cfFileName,
-                                                       kCFURLPOSIXPathStyle,
-                                                       false);
-  ExtAudioFileRef extAudioFile;
-  CheckError(ExtAudioFileOpenURL(fileURL,
-                                 &extAudioFile),
-             "opening the ext audio file");
-  
+AudioStreamBasicDescription SpecifyAudioFormatToConverTo(ExtAudioFileRef extAudioFile) {
   AudioStreamBasicDescription dataFormat;
   
   memset((void *)&(dataFormat), 0, sizeof(dataFormat));
@@ -44,34 +35,16 @@ OSStatus LoadAudioDataIntoBuffer(AppState *appState, const char *fileName) {
                                      sizeof(dataFormat),
                                      &(dataFormat)),
              "Setting the client data format on the ext audio file");
-  
-  SInt64 fileLengthFrames;
-  UInt32 propSize = sizeof(fileLengthFrames);
-  CheckError(ExtAudioFileGetProperty(extAudioFile,
-                                     kExtAudioFileProperty_FileLengthFrames,
-                                     &propSize,
-                                     &fileLengthFrames),
-             "Getting the number of frames in the file");
-  
-  AudioStreamBasicDescription inputDataFormat;
-  propSize = sizeof(inputDataFormat);
-  CheckError(ExtAudioFileGetProperty(extAudioFile,
-                                     kExtAudioFileProperty_FileDataFormat,
-                                     &propSize,
-                                     &inputDataFormat),
-             "Getting the input data format from audio file");
-  
-  SInt64 framesToPutInBuffer = fileLengthFrames * dataFormat.mSampleRate / inputDataFormat.mSampleRate;
-  
-  UInt32 bufferSizeBytes;
-  bufferSizeBytes = framesToPutInBuffer * dataFormat.mBytesPerFrame;
-  appState->duration = framesToPutInBuffer / dataFormat.mSampleRate;
+  return dataFormat;
+}
 
-  // this is the buffer that we will fill in from the
-  // the audio file and we will finally give to the OpenAL Source.
-  // OpenAL Source will copy data from this buffer.
-  UInt16 *sampleBuffer;
-  sampleBuffer = malloc(bufferSizeBytes);
+void ReadAudioDataAndStoreInTempBuffer(ExtAudioFileRef extAudioFile,
+                                       AudioStreamBasicDescription convertToDataFormat,
+                                       SInt64 framesToPutInBuffer,
+                                       UInt8 **oTempBuffer,
+                                       UInt32 *oTempBufferSize) {
+  *oTempBufferSize = framesToPutInBuffer * convertToDataFormat.mBytesPerFrame;
+  (*oTempBuffer) = malloc(*oTempBufferSize);
 
   // This is a temporary structure that will basically be used as an interface
   // to the ExtAudioFileRead(). Its mBuffers[0].mData pointer will point to the
@@ -79,14 +52,14 @@ OSStatus LoadAudioDataIntoBuffer(AppState *appState, const char *fileName) {
   // ExtAudioFileRead().
   AudioBufferList abl;
   abl.mNumberBuffers = 1;
-  abl.mBuffers[0].mNumberChannels = dataFormat.mChannelsPerFrame;
+  abl.mBuffers[0].mNumberChannels = convertToDataFormat.mChannelsPerFrame;
     
   UInt32 totalFramesRead = 0;
   UInt32 framesToRead = 0;
   do {
     framesToRead = framesToPutInBuffer - totalFramesRead;
-    abl.mBuffers[0].mData = sampleBuffer + totalFramesRead * dataFormat.mBytesPerFrame;
-    abl.mBuffers[0].mDataByteSize = framesToRead * dataFormat.mBytesPerFrame;
+    abl.mBuffers[0].mData = (*oTempBuffer) + totalFramesRead * convertToDataFormat.mBytesPerFrame;
+    abl.mBuffers[0].mDataByteSize = framesToRead * convertToDataFormat.mBytesPerFrame;
     
     CheckError(ExtAudioFileRead(extAudioFile,
                                 &framesToRead,
@@ -94,19 +67,59 @@ OSStatus LoadAudioDataIntoBuffer(AppState *appState, const char *fileName) {
                "Reading data from the audio file");
     totalFramesRead += framesToRead;
   } while(totalFramesRead < framesToPutInBuffer);
-  
-  CheckError(ExtAudioFileDispose(extAudioFile), "Disposing the ext audio file");
-  CFRelease(cfFileName);
-    
+}
+
+void CopyTempBufferDataToALBuffer(AppState *appState,
+                                  UInt8 *tempBuffer,
+                                  UInt32 tempBufferSize,
+                                  AudioStreamBasicDescription convertToDataFormat) {
   alBufferData(appState->buffers[0],
                AL_FORMAT_MONO16,
-               sampleBuffer,
-               bufferSizeBytes,
-               dataFormat.mSampleRate);
+               tempBuffer,
+               tempBufferSize,
+               convertToDataFormat.mSampleRate);
   CheckALError("giving data to the AL buffer");
+}
+
+void ReleaseTempBuffer(UInt8 **oTempBuffer) {
+  free(*oTempBuffer);
+  oTempBuffer = NULL;
+}
+
+OSStatus LoadAudioDataIntoBuffer(AppState *appState, const char *fileName) {
+  ExtAudioFileRef extAudioFile = OpenAudioFile(fileName);
+    
+  AudioStreamBasicDescription inputDataFormat = GetExtAudioFileAudioDataFormat(extAudioFile);
   
-  free(sampleBuffer);
-  sampleBuffer = NULL;
+  SInt64 fileLengthFrames = GetNumberOfFramesInFile(extAudioFile);
+  
+  AudioStreamBasicDescription convertToDataFormat = SpecifyAudioFormatToConverTo(extAudioFile);
+  
+  SInt64 framesToPutInBuffer = fileLengthFrames * convertToDataFormat.mSampleRate / inputDataFormat.mSampleRate;
+  
+  appState->duration = framesToPutInBuffer / convertToDataFormat.mSampleRate;
+
+  // this is the buffer that we will fill in from the
+  // the audio file and we will finally give to the OpenAL Source.
+  // OpenAL Source will copy data from this buffer.
+  UInt8 *tempBuffer;
+  UInt32 tempBufferSize;
+  
+  ReadAudioDataAndStoreInTempBuffer(extAudioFile,
+                                    convertToDataFormat,
+                                    framesToPutInBuffer,
+                                    &tempBuffer,
+                                    &tempBufferSize);
+  
+  // Close the input audio file. We don't need it any more.
+  CheckError(ExtAudioFileDispose(extAudioFile), "Disposing the ext audio file");
+    
+  CopyTempBufferDataToALBuffer(appState,
+                               tempBuffer,
+                               tempBufferSize,
+                               convertToDataFormat);
+  
+  ReleaseTempBuffer(&tempBuffer);
   
   return noErr;
 }
@@ -124,7 +137,7 @@ void UpdateSourceLocation(AppState *appState) {
   return;
 }
 
-ALCdevice *OpenDevice() {
+ALCdevice *OpenDevice(void) {
   ALCdevice *alDevice = alcOpenDevice(NULL);
   CheckALError("opening the defaul AL device");
   return alDevice;
@@ -163,7 +176,7 @@ void LinkBufferToSource(AppState *appState) {
   CheckALError("setting the buffer to the source");
 }
 
-void PositionListenerInScene() {
+void PositionListenerInScene(void) {
   alListener3f(AL_POSITION, 0.0, 0.0, 0.0);
   CheckALError("setting the listener position");
 }

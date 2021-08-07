@@ -10,6 +10,9 @@
 		E52D75D926BD4A5800E10EE4 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = E52D75D826BD4A5800E10EE4 /* main.m */; };
 		E52D75E426BD4B9000E10EE4 /* CheckError.m in Sources */ = {isa = PBXBuildFile; fileRef = E52D75E326BD4B9000E10EE4 /* CheckError.m */; };
 		E52D75E826BD4FD000E10EE4 /* CheckALError.m in Sources */ = {isa = PBXBuildFile; fileRef = E52D75E726BD4FD000E10EE4 /* CheckALError.m */; };
+		E52D75EE26BEA7B800E10EE4 /* OpenAudioFile.m in Sources */ = {isa = PBXBuildFile; fileRef = E52D75ED26BEA7B800E10EE4 /* OpenAudioFile.m */; };
+		E52D75F126BEA9DE00E10EE4 /* GetNumberOfFramesInFile.m in Sources */ = {isa = PBXBuildFile; fileRef = E52D75F026BEA9DE00E10EE4 /* GetNumberOfFramesInFile.m */; };
+		E52D75F426BEABC000E10EE4 /* GetExtAudioFileAudioDataFormat.m in Sources */ = {isa = PBXBuildFile; fileRef = E52D75F326BEABC000E10EE4 /* GetExtAudioFileAudioDataFormat.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -33,6 +36,12 @@
 		E52D75E926BD500300E10EE4 /* CheckALError.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CheckALError.h; sourceTree = "<group>"; };
 		E52D75EA26BD591800E10EE4 /* AppState.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppState.h; sourceTree = "<group>"; };
 		E52D75EC26BDAF6900E10EE4 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		E52D75ED26BEA7B800E10EE4 /* OpenAudioFile.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = OpenAudioFile.m; sourceTree = "<group>"; };
+		E52D75EF26BEA7E700E10EE4 /* OpenAudioFile.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OpenAudioFile.h; sourceTree = "<group>"; };
+		E52D75F026BEA9DE00E10EE4 /* GetNumberOfFramesInFile.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GetNumberOfFramesInFile.m; sourceTree = "<group>"; };
+		E52D75F226BEAB2500E10EE4 /* GetNumberOfFramesInFile.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GetNumberOfFramesInFile.h; sourceTree = "<group>"; };
+		E52D75F326BEABC000E10EE4 /* GetExtAudioFileAudioDataFormat.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GetExtAudioFileAudioDataFormat.m; sourceTree = "<group>"; };
+		E52D75F526BEABCA00E10EE4 /* GetExtAudioFileAudioDataFormat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GetExtAudioFileAudioDataFormat.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -96,6 +105,12 @@
 			children = (
 				E52D75E726BD4FD000E10EE4 /* CheckALError.m */,
 				E52D75E926BD500300E10EE4 /* CheckALError.h */,
+				E52D75ED26BEA7B800E10EE4 /* OpenAudioFile.m */,
+				E52D75EF26BEA7E700E10EE4 /* OpenAudioFile.h */,
+				E52D75F026BEA9DE00E10EE4 /* GetNumberOfFramesInFile.m */,
+				E52D75F226BEAB2500E10EE4 /* GetNumberOfFramesInFile.h */,
+				E52D75F326BEABC000E10EE4 /* GetExtAudioFileAudioDataFormat.m */,
+				E52D75F526BEABCA00E10EE4 /* GetExtAudioFileAudioDataFormat.h */,
 			);
 			path = AudioUtils;
 			sourceTree = "<group>";
@@ -158,6 +173,9 @@
 			files = (
 				E52D75D926BD4A5800E10EE4 /* main.m in Sources */,
 				E52D75E426BD4B9000E10EE4 /* CheckError.m in Sources */,
+				E52D75EE26BEA7B800E10EE4 /* OpenAudioFile.m in Sources */,
+				E52D75F126BEA9DE00E10EE4 /* GetNumberOfFramesInFile.m in Sources */,
+				E52D75F426BEABC000E10EE4 /* GetExtAudioFileAudioDataFormat.m in Sources */,
 				E52D75E826BD4FD000E10EE4 /* CheckALError.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
