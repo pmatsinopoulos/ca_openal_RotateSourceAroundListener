@@ -5,12 +5,12 @@
 //  Created by Panayotis Matsinopoulos on 6/8/21.
 //
 
-#ifndef MyLoopPlayer_h
-#define MyLoopPlayer_h
+#ifndef AppState_h
+#define AppState_h
 
 #include <AudioToolbox/AudioToolbox.h>
 
-typedef struct _MyLoopPlayer {
+typedef struct _AppState {
   AudioStreamBasicDescription dataFormat;
   
   // this is the buffer that we will fill in from the
@@ -19,9 +19,10 @@ typedef struct _MyLoopPlayer {
   
   UInt32 bufferSizeBytes;
   
+  ALuint buffers[1];
   ALuint sources[1];
   
   double duration;
-} MyLoopPlayer;
+} AppState;
 
-#endif /* MyLoopPlayer_h */
+#endif /* AppState_h */

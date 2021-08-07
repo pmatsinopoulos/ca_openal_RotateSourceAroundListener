@@ -10,37 +10,37 @@
 #import <OpenAL/OpenAL.h>
 #include "CheckError.h"
 #include "CheckALError.h"
-#include "MyLoopPlayer.h"
+#include "AppState.h"
 
 #define ORBIT_SPEED 1
 
-OSStatus LoadLoopIntoBuffer(MyLoopPlayer *player, const char *fileName) {
+OSStatus LoadAudioDataIntoBuffer(AppState *appState, const char *fileName) {
   CFStringRef cfFileName = CFStringCreateWithCString(kCFAllocatorDefault,
                                                   fileName,
                                                   CFStringGetSystemEncoding());
-  CFURLRef loopFileURL = CFURLCreateWithFileSystemPath(kCFAllocatorDefault,
+  CFURLRef fileURL = CFURLCreateWithFileSystemPath(kCFAllocatorDefault,
                                                        cfFileName,
                                                        kCFURLPOSIXPathStyle,
                                                        false);
   ExtAudioFileRef extAudioFile;
-  CheckError(ExtAudioFileOpenURL(loopFileURL,
+  CheckError(ExtAudioFileOpenURL(fileURL,
                                  &extAudioFile),
              "opening the ext audio file");
   
-  memset((void *)&(player->dataFormat), 0, sizeof(player->dataFormat));
-  player->dataFormat.mFormatID = kAudioFormatLinearPCM;
-  player->dataFormat.mFramesPerPacket = 1;
-  player->dataFormat.mFormatFlags = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
-  player->dataFormat.mBitsPerChannel = 16;
-  player->dataFormat.mChannelsPerFrame = 1; // mono
-  player->dataFormat.mBytesPerFrame = player->dataFormat.mBitsPerChannel * player->dataFormat.mChannelsPerFrame / 8;
-  player->dataFormat.mBytesPerPacket = player->dataFormat.mBytesPerFrame * player->dataFormat.mFramesPerPacket;
-  player->dataFormat.mSampleRate = 44100.0;
+  memset((void *)&(appState->dataFormat), 0, sizeof(appState->dataFormat));
+  appState->dataFormat.mFormatID = kAudioFormatLinearPCM;
+  appState->dataFormat.mFramesPerPacket = 1;
+  appState->dataFormat.mFormatFlags = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
+  appState->dataFormat.mBitsPerChannel = 16;
+  appState->dataFormat.mChannelsPerFrame = 1; // mono
+  appState->dataFormat.mBytesPerFrame = appState->dataFormat.mBitsPerChannel * appState->dataFormat.mChannelsPerFrame / 8;
+  appState->dataFormat.mBytesPerPacket = appState->dataFormat.mBytesPerFrame * appState->dataFormat.mFramesPerPacket;
+  appState->dataFormat.mSampleRate = 44100.0;
 
   CheckError(ExtAudioFileSetProperty(extAudioFile,
                                      kExtAudioFileProperty_ClientDataFormat,
-                                     sizeof(player->dataFormat),
-                                     &(player->dataFormat)),
+                                     sizeof(appState->dataFormat),
+                                     &(appState->dataFormat)),
              "Setting the client data format on the ext audio file");
   
   SInt64 fileLengthFrames;
@@ -59,27 +59,27 @@ OSStatus LoadLoopIntoBuffer(MyLoopPlayer *player, const char *fileName) {
                                      &inputDataFormat),
              "Getting the input data format from audio file");
   
-  SInt64 framesToPutInBuffer = fileLengthFrames * player->dataFormat.mSampleRate / inputDataFormat.mSampleRate;
+  SInt64 framesToPutInBuffer = fileLengthFrames * appState->dataFormat.mSampleRate / inputDataFormat.mSampleRate;
   
-  player->bufferSizeBytes = framesToPutInBuffer * player->dataFormat.mBytesPerFrame;
-  player->duration = framesToPutInBuffer / player->dataFormat.mSampleRate;
+  appState->bufferSizeBytes = framesToPutInBuffer * appState->dataFormat.mBytesPerFrame;
+  appState->duration = framesToPutInBuffer / appState->dataFormat.mSampleRate;
 
-  player->sampleBuffer = malloc(player->bufferSizeBytes);
+  appState->sampleBuffer = malloc(appState->bufferSizeBytes);
 
   // This is a temporary structure that will basically be used as an interface
   // to the ExtAudioFileRead(). Its mBuffers[0].mData pointer will point to the
-  // part of the player->sampleBuffer we want to put data in when reading from
+  // part of the appState->sampleBuffer we want to put data in when reading from
   // ExtAudioFileRead().
   AudioBufferList abl;
   abl.mNumberBuffers = 1;
-  abl.mBuffers[0].mNumberChannels = player->dataFormat.mChannelsPerFrame;
+  abl.mBuffers[0].mNumberChannels = appState->dataFormat.mChannelsPerFrame;
     
   UInt32 totalFramesRead = 0;
   UInt32 framesToRead = 0;
   do {
     framesToRead = framesToPutInBuffer - totalFramesRead;
-    abl.mBuffers[0].mData = player->sampleBuffer + totalFramesRead * player->dataFormat.mBytesPerFrame;
-    abl.mBuffers[0].mDataByteSize = framesToRead * player->dataFormat.mBytesPerFrame;
+    abl.mBuffers[0].mData = appState->sampleBuffer + totalFramesRead * appState->dataFormat.mBytesPerFrame;
+    abl.mBuffers[0].mDataByteSize = framesToRead * appState->dataFormat.mBytesPerFrame;
     
     CheckError(ExtAudioFileRead(extAudioFile,
                                 &framesToRead,
@@ -93,80 +93,95 @@ OSStatus LoadLoopIntoBuffer(MyLoopPlayer *player, const char *fileName) {
   return noErr;
 }
 
-void UpdateSourceLocation(MyLoopPlayer *player) {
+void UpdateSourceLocation(AppState *appState) {
   double theta = fmod(CFAbsoluteTimeGetCurrent() * ORBIT_SPEED, M_PI * 2);
   ALfloat x = 3 * cos(theta);
   ALfloat y = 0.5 * sin(theta);
   ALfloat z = 1.0 * sin(theta);
   
-  alSource3f(player->sources[0], AL_POSITION, x, y, z);
+  alSource3f(appState->sources[0], AL_POSITION, x, y, z);
   
   CheckALError("updating source lodation");
   
   return;
 }
 
+ALCdevice *OpenDevice() {
+  ALCdevice *alDevice = alcOpenDevice(NULL);
+  CheckALError("opening the defaul AL device");
+  return alDevice;
+}
+
+ALCcontext * CreateContext(ALCdevice *alDevice) {
+  ALCcontext *alContext = alcCreateContext(alDevice, 0);
+  CheckALError("creating AL context");
+  
+  alcMakeContextCurrent(alContext);
+  CheckALError("making the context current");
+  
+  return alContext;
+}
+
+void CreateSource(AppState *appState) {
+  alGenSources(1, appState->sources);
+
+  alSourcef(appState->sources[0],
+            AL_GAIN,
+            AL_MAX_GAIN);
+  CheckALError("setting the AL property for gain");
+  
+  UpdateSourceLocation(appState);
+}
+
 int main(int argc, const char * argv[]) {
   @autoreleasepool {
     NSLog(@"Starting...");
     
-    MyLoopPlayer player;
+    AppState appState;
     
-    CheckError(LoadLoopIntoBuffer(&player, argv[1]), "Loading Loop Into Buffer");
+    CheckError(LoadAudioDataIntoBuffer(&appState, argv[1]), "Loading Audio Data Into Buffer");
     
-    ALCdevice *alDevice = alcOpenDevice(NULL);
-    CheckALError("opening the defaul AL device");
+    ALCdevice *alDevice = OpenDevice();
     
-    ALCcontext *alContext = alcCreateContext(alDevice, 0);
-    CheckALError("creating AL context");
+    ALCcontext *alContext = CreateContext(alDevice);
     
-    alcMakeContextCurrent(alContext);
-    CheckALError("making the context current");
+    CreateSource(&appState);
     
-    ALuint buffers[1];
-    alGenBuffers(1, buffers);
+    alGenBuffers(1, appState.buffers);
     CheckALError("generating AL buffers");
     
-    alBufferData(buffers[0],
+    alBufferData(appState.buffers[0],
                  AL_FORMAT_MONO16,
-                 player.sampleBuffer,
-                 player.bufferSizeBytes,
-                 player.dataFormat.mSampleRate);
+                 appState.sampleBuffer,
+                 appState.bufferSizeBytes,
+                 appState.dataFormat.mSampleRate);
     CheckALError("giving data to the AL buffer");
-    free(player.sampleBuffer);
-    player.sampleBuffer = NULL;
+    free(appState.sampleBuffer);
+    appState.sampleBuffer = NULL;
     
-    alGenSources(1, player.sources);
-
-    alSourcef(player.sources[0],
-              AL_GAIN,
-              AL_MAX_GAIN);
-    CheckALError("setting the AL property for gain");
     
-    UpdateSourceLocation(&player);
-    
-    alSourcei(player.sources[0], AL_BUFFER, buffers[0]);
+    alSourcei(appState.sources[0], AL_BUFFER, appState.buffers[0]);
     CheckALError("setting the buffer to the source");
     
     alListener3f(AL_POSITION, 0.0, 0.0, 0.0);
     CheckALError("setting the listener position");
     
-    alSourcePlay(player.sources[0]);
+    alSourcePlay(appState.sources[0]);
     CheckALError("starting the source");
     
     printf("Playing ... \n");
     time_t startTime = time(NULL);
     
     do {
-      UpdateSourceLocation(&player);
+      UpdateSourceLocation(&appState);
       CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.1, false);
-    } while(difftime(time(NULL), startTime) < (player.duration + 0.5));
+    } while(difftime(time(NULL), startTime) < (appState.duration + 0.5));
     
-    alSourceStop(player.sources[0]);
+    alSourceStop(appState.sources[0]);
     CheckALError("stopping the source");
     
-    alDeleteSources(1, player.sources);
-    alDeleteBuffers(1, buffers);
+    alDeleteSources(1, appState.sources);
+    alDeleteBuffers(1, appState.buffers);
     alcDestroyContext(alContext);
     alcCloseDevice(alDevice);
     

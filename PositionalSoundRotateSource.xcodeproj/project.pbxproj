@@ -31,7 +31,7 @@
 		E52D75E526BD4BD300E10EE4 /* CheckError.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CheckError.h; sourceTree = "<group>"; };
 		E52D75E726BD4FD000E10EE4 /* CheckALError.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CheckALError.m; sourceTree = "<group>"; };
 		E52D75E926BD500300E10EE4 /* CheckALError.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CheckALError.h; sourceTree = "<group>"; };
-		E52D75EA26BD591800E10EE4 /* MyLoopPlayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MyLoopPlayer.h; sourceTree = "<group>"; };
+		E52D75EA26BD591800E10EE4 /* AppState.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppState.h; sourceTree = "<group>"; };
 		E52D75EC26BDAF6900E10EE4 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -70,7 +70,7 @@
 				E52D75E626BD4F8C00E10EE4 /* AudioUtils */,
 				E52D75E226BD4B7700E10EE4 /* Utils */,
 				E52D75D826BD4A5800E10EE4 /* main.m */,
-				E52D75EA26BD591800E10EE4 /* MyLoopPlayer.h */,
+				E52D75EA26BD591800E10EE4 /* AppState.h */,
 			);
 			path = PositionalSoundRotateSource;
 			sourceTree = "<group>";
