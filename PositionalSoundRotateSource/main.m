@@ -73,6 +73,9 @@ void CopyTempBufferDataToALBuffer(AppState *appState,
                                   UInt8 *tempBuffer,
                                   UInt32 tempBufferSize,
                                   AudioStreamBasicDescription convertToDataFormat) {
+  alGenBuffers(1, appState->buffers);
+  CheckALError("generating AL buffers");
+
   alBufferData(appState->buffers[0],
                AL_FORMAT_MONO16,
                tempBuffer,
@@ -86,7 +89,48 @@ void ReleaseTempBuffer(UInt8 **oTempBuffer) {
   oTempBuffer = NULL;
 }
 
-OSStatus LoadAudioDataIntoBuffer(AppState *appState, const char *fileName) {
+void UpdateSourceLocation(AppState *appState) {
+  double theta = fmod(CFAbsoluteTimeGetCurrent() * ORBIT_SPEED, M_PI * 2);
+  ALfloat x = 3 * cos(theta);
+  ALfloat y = 0.5 * sin(theta);
+  ALfloat z = 1.0 * sin(theta);
+  
+  alSource3f(appState->sources[0], AL_POSITION, x, y, z);
+  
+  CheckALError("updating source lodation");
+  
+  return;
+}
+
+ALCdevice *OpenDevice(void) {
+  ALCdevice *alDevice = alcOpenDevice(NULL);
+  CheckALError("opening the defaul AL device");
+
+  return alDevice;
+}
+
+ALCcontext * CreateContext(ALCdevice *alDevice) {
+  ALCcontext *alContext = alcCreateContext(alDevice, 0);
+  CheckALError("creating AL context");
+  
+  alcMakeContextCurrent(alContext);
+  CheckALError("making the context current");
+  
+  return alContext;
+}
+
+void CreateSource(AppState *appState) {
+  alGenSources(1, appState->sources);
+
+  alSourcef(appState->sources[0],
+            AL_GAIN,
+            AL_MAX_GAIN);
+  CheckALError("setting the AL property for gain");
+  
+  UpdateSourceLocation(appState);
+}
+
+void CreateAndFillBuffer(AppState *appState, const char *fileName) {
   ExtAudioFileRef extAudioFile = OpenAudioFile(fileName);
     
   AudioStreamBasicDescription inputDataFormat = GetExtAudioFileAudioDataFormat(extAudioFile);
@@ -120,55 +164,6 @@ OSStatus LoadAudioDataIntoBuffer(AppState *appState, const char *fileName) {
                                convertToDataFormat);
   
   ReleaseTempBuffer(&tempBuffer);
-  
-  return noErr;
-}
-
-void UpdateSourceLocation(AppState *appState) {
-  double theta = fmod(CFAbsoluteTimeGetCurrent() * ORBIT_SPEED, M_PI * 2);
-  ALfloat x = 3 * cos(theta);
-  ALfloat y = 0.5 * sin(theta);
-  ALfloat z = 1.0 * sin(theta);
-  
-  alSource3f(appState->sources[0], AL_POSITION, x, y, z);
-  
-  CheckALError("updating source lodation");
-  
-  return;
-}
-
-ALCdevice *OpenDevice(void) {
-  ALCdevice *alDevice = alcOpenDevice(NULL);
-  CheckALError("opening the defaul AL device");
-  return alDevice;
-}
-
-ALCcontext * CreateContext(ALCdevice *alDevice) {
-  ALCcontext *alContext = alcCreateContext(alDevice, 0);
-  CheckALError("creating AL context");
-  
-  alcMakeContextCurrent(alContext);
-  CheckALError("making the context current");
-  
-  return alContext;
-}
-
-void CreateSource(AppState *appState) {
-  alGenSources(1, appState->sources);
-
-  alSourcef(appState->sources[0],
-            AL_GAIN,
-            AL_MAX_GAIN);
-  CheckALError("setting the AL property for gain");
-  
-  UpdateSourceLocation(appState);
-}
-
-void CreateAndFillBuffer(AppState *appState, const char *fileName) {
-  alGenBuffers(1, appState->buffers);
-  CheckALError("generating AL buffers");
-
-  CheckError(LoadAudioDataIntoBuffer(appState, fileName), "Loading Audio Data Into Buffer");
 }
 
 void LinkBufferToSource(AppState *appState) {
