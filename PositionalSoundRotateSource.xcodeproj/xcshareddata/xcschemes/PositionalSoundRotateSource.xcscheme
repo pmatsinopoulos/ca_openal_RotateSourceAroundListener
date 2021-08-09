@@ -53,11 +53,11 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "/Users/panayotismatsinopoulos/60studi-02.mp3"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "/Users/panayotismatsinopoulos/trixtor.mp3"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
    </LaunchAction>

@@ -48,7 +48,7 @@ void ReadAudioDataAndStoreInTempBuffer(ExtAudioFileRef extAudioFile,
 
   // This is a temporary structure that will basically be used as an interface
   // to the ExtAudioFileRead(). Its mBuffers[0].mData pointer will point to the
-  // part of the appState->sampleBuffer we want to put data in when reading from
+  // part of the (*oTempBuffer) we want to put data in when reading from
   // ExtAudioFileRead().
   AudioBufferList abl;
   abl.mNumberBuffers = 1;
@@ -57,8 +57,8 @@ void ReadAudioDataAndStoreInTempBuffer(ExtAudioFileRef extAudioFile,
   UInt32 totalFramesRead = 0;
   UInt32 framesToRead = 0;
   do {
-    framesToRead = framesToPutInBuffer - totalFramesRead;
     abl.mBuffers[0].mData = (*oTempBuffer) + totalFramesRead * convertToDataFormat.mBytesPerFrame;
+    framesToRead = framesToPutInBuffer - totalFramesRead;
     abl.mBuffers[0].mDataByteSize = framesToRead * convertToDataFormat.mBytesPerFrame;
     
     CheckError(ExtAudioFileRead(extAudioFile,
